@@ -1,49 +1,86 @@
+package DAO;
+
+import DTO.ProdutosDTO;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import javax.swing.JOptionPane;
 
 public class ProdutosDAO {
 
-    public void cadastrarProduto(ProdutosDTO produto) {
-        String sql = "INSERT INTO produtos (nome, valor, status) VALUES (?, ?, ?)";
+    Connection conn;
+    PreparedStatement pstm;
+    ResultSet rs;
+    ArrayList<ProdutosDTO> lista = new ArrayList<>();
 
-        try (Connection conn = new conectaDAO().connectDB();
-             PreparedStatement pst = conn.prepareStatement(sql)) {
+    // ✅ LISTAR TODOS OS PRODUTOS
+    public ArrayList<ProdutosDTO> listarProdutos() throws SQLException {
+        String sql = "SELECT * FROM produtos ORDER BY id DESC";
+        conn = new conectaDAO().connectDB();
+        pstm = conn.prepareStatement(sql);
+        rs = pstm.executeQuery();
 
-            pst.setString(1, produto.getNome());
-            pst.setInt(2, produto.getValor());
-            pst.setString(3, produto.getStatus());
-
-            pst.executeUpdate();
-            JOptionPane.showMessageDialog(null, "Cadastro realizado com sucesso!");
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Erro ao cadastrar produto: " + e.getMessage());
+        lista.clear();
+        while (rs.next()) {
+            ProdutosDTO p = new ProdutosDTO();
+            p.setId(rs.getInt("id"));
+            p.setNome(rs.getString("nome"));
+            p.setValor(rs.getInt("valor"));
+            p.setStatus(rs.getString("status"));
+            lista.add(p);
         }
+
+        rs.close();
+        pstm.close();
+        conn.close();
+        return lista;
     }
 
-    public ArrayList<ProdutosDTO> listarProdutos() {
-        ArrayList<ProdutosDTO> listagem = new ArrayList<>();
-        String sql = "SELECT id, nome, valor, status FROM produtos ORDER BY id DESC";
+    // ✅ CADASTRAR PRODUTO
+    public void cadastrarProduto(ProdutosDTO objProduto) throws SQLException {
+        String sql = "INSERT INTO produtos (nome, valor, status) VALUES (?, ?, ?)";
+        conn = new conectaDAO().connectDB();
+        pstm = conn.prepareStatement(sql);
+        pstm.setString(1, objProduto.getNome());
+        pstm.setInt(2, objProduto.getValor());
+        pstm.setString(3, objProduto.getStatus());
+        pstm.execute();
+        pstm.close();
+        conn.close();
+    }
 
-        try (Connection conn = new conectaDAO().connectDB();
-             PreparedStatement pst = conn.prepareStatement(sql);
-             ResultSet rs = pst.executeQuery()) {
+    // ✅ VENDER PRODUTO (ATUALIZA STATUS PARA 'Vendido')
+    public void venderProduto(int id) throws SQLException {
+        String sql = "UPDATE produtos SET status = 'Vendido' WHERE id = ?";
+        conn = new conectaDAO().connectDB();
+        pstm = conn.prepareStatement(sql);
+        pstm.setInt(1, id);
+        pstm.executeUpdate();
+        pstm.close();
+        conn.close();
+    }
 
-            while (rs.next()) {
-                ProdutosDTO p = new ProdutosDTO();
-                p.setId(rs.getInt("id"));
-                p.setNome(rs.getString("nome"));
-                p.setValor(rs.getInt("valor"));
-                p.setStatus(rs.getString("status"));
-                listagem.add(p);
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Erro ao listar produtos: " + e.getMessage());
+    // ✅ LISTAR PRODUTOS VENDIDOS
+    public ArrayList<ProdutosDTO> listarProdutosVendidos() throws SQLException {
+        String sql = "SELECT * FROM produtos WHERE status = 'Vendido' ORDER BY id DESC";
+        conn = new conectaDAO().connectDB();
+        pstm = conn.prepareStatement(sql);
+        rs = pstm.executeQuery();
+
+        ArrayList<ProdutosDTO> vendidos = new ArrayList<>();
+        while (rs.next()) {
+            ProdutosDTO p = new ProdutosDTO();
+            p.setId(rs.getInt("id"));
+            p.setNome(rs.getString("nome"));
+            p.setValor(rs.getInt("valor"));
+            p.setStatus(rs.getString("status"));
+            vendidos.add(p);
         }
 
-        return listagem;
+        rs.close();
+        pstm.close();
+        conn.close();
+        return vendidos;
     }
 }
